@@ -13,6 +13,7 @@
 		D396EE982715FE150016ABBF /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D396EE972715FE150016ABBF /* Preview Assets.xcassets */; };
 		D396EEA32715FE160016ABBF /* AudioSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D396EEA22715FE160016ABBF /* AudioSyncTests.swift */; };
 		D396EEAE2715FE160016ABBF /* AudioSyncUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D396EEAD2715FE160016ABBF /* AudioSyncUITests.swift */; };
+		D396EEBC2715FEE30016ABBF /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D396EEBB2715FEE30016ABBF /* AudioManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,6 +46,7 @@
 		D396EEA92715FE160016ABBF /* AudioSyncUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AudioSyncUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D396EEAD2715FE160016ABBF /* AudioSyncUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSyncUITests.swift; sourceTree = "<group>"; };
 		D396EEAF2715FE160016ABBF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D396EEBB2715FEE30016ABBF /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +99,7 @@
 			children = (
 				D396EE902715FE130016ABBF /* AudioSyncApp.swift */,
 				D396EE922715FE130016ABBF /* ContentView.swift */,
+				D396EEBB2715FEE30016ABBF /* AudioManager.swift */,
 				D396EE942715FE150016ABBF /* Assets.xcassets */,
 				D396EE992715FE150016ABBF /* Info.plist */,
 				D396EE962715FE150016ABBF /* Preview Content */,
@@ -259,6 +262,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D396EEBC2715FEE30016ABBF /* AudioManager.swift in Sources */,
 				D396EE932715FE130016ABBF /* ContentView.swift in Sources */,
 				D396EE912715FE130016ABBF /* AudioSyncApp.swift in Sources */,
 			);
