@@ -84,7 +84,7 @@ class AudioManager: ObservableObject {
             guard loudFrameTimestamp - prevLoudFrameTimestamp > 0.5 else { return noErr }
             prevLoudFrameTimestamp = loudFrameTimestamp
 
-            print("Loud timestamp: \(loudFrameTimestamp) (error=\(loudFrameTimestamp - self.currentStartTime - Constant.pluckOffset))")
+            print("Received loud frame at \(loudFrameTimestamp) (error=\(loudFrameTimestamp - self.currentStartTime - Constant.pluckOffset))")
             return noErr
         }
         audioEngine.attach(sinkNode)
@@ -106,13 +106,12 @@ class AudioManager: ObservableObject {
             DispatchQueue.main.async {
                 self.playerNode.stop()
                 self.isPlaying = false
-                print("Backing track completed playback")
             }
         }
         playerNode.play(at: AVAudioTime(hostTime: UInt64((currentStartTime - systemOutputLatency) / Constant.ticksToSeconds)))
 
         print("Started at: \(currentStartTime)")
-        print("IO Buffer: \(systemIoBufferDuration)")
+        print("IO buffer: \(systemIoBufferDuration)")
         print("Input latency: \(systemInputLatency)")
         print("Output latency: \(systemOutputLatency)")
         isPlaying = true
