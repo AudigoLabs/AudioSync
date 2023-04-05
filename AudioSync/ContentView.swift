@@ -16,24 +16,18 @@ struct ContentView: View {
             Text("Audio Sync Demo App")
                 .font(.title)
                 .padding()
-            Text(audioManager.hasBackingTrack ? "Has Backing Track" : "No Backing Track")
-                .font(.headline)
-                .padding()
             Button(action: {
                 print("Clicked button")
-                if audioManager.isRecording {
-                    audioManager.stopRecording()
-                } else {
-                    audioManager.startRecording()
-                }
+                guard !audioManager.isPlaying else { return }
+                audioManager.start()
             }, label: {
-                if self.audioManager.isRecording {
-                    Text("Stop Recording")
+                if self.audioManager.isPlaying {
+                    Text("Running...")
                 } else {
-                    Text("Start Recording")
+                    Text("Start")
                 }
             })
-            .disabled(buttonDisabled)
+            .disabled(buttonDisabled || self.audioManager.isPlaying)
             .onAppear() {
                 audioManager.setup {
                     buttonDisabled = false

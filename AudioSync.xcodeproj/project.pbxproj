@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D37881FA29DCBCF800C33FCD /* backing.wav in Resources */ = {isa = PBXBuildFile; fileRef = D37881F929DCBCF800C33FCD /* backing.wav */; };
 		D396EE912715FE130016ABBF /* AudioSyncApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D396EE902715FE130016ABBF /* AudioSyncApp.swift */; };
 		D396EE932715FE130016ABBF /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D396EE922715FE130016ABBF /* ContentView.swift */; };
 		D396EE952715FE150016ABBF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D396EE942715FE150016ABBF /* Assets.xcassets */; };
@@ -34,6 +35,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D37881F929DCBCF800C33FCD /* backing.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = backing.wav; sourceTree = "<group>"; };
 		D396EE8D2715FE130016ABBF /* AudioSync.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AudioSync.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D396EE902715FE130016ABBF /* AudioSyncApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSyncApp.swift; sourceTree = "<group>"; };
 		D396EE922715FE130016ABBF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -74,6 +76,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		D37881F829DCBCE700C33FCD /* AudioAssets */ = {
+			isa = PBXGroup;
+			children = (
+				D37881F929DCBCF800C33FCD /* backing.wav */,
+			);
+			path = AudioAssets;
+			sourceTree = "<group>";
+		};
 		D396EE842715FE130016ABBF = {
 			isa = PBXGroup;
 			children = (
@@ -97,6 +107,7 @@
 		D396EE8F2715FE130016ABBF /* AudioSync */ = {
 			isa = PBXGroup;
 			children = (
+				D37881F829DCBCE700C33FCD /* AudioAssets */,
 				D396EE902715FE130016ABBF /* AudioSyncApp.swift */,
 				D396EE922715FE130016ABBF /* ContentView.swift */,
 				D396EEBB2715FEE30016ABBF /* AudioManager.swift */,
@@ -237,6 +248,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D396EE982715FE150016ABBF /* Preview Assets.xcassets in Resources */,
+				D37881FA29DCBCF800C33FCD /* backing.wav in Resources */,
 				D396EE952715FE150016ABBF /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -426,7 +438,7 @@
 				DEVELOPMENT_TEAM = 8DCB9R23FC;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = AudioSync/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -448,7 +460,7 @@
 				DEVELOPMENT_TEAM = 8DCB9R23FC;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = AudioSync/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
