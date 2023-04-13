@@ -6,13 +6,14 @@
 //
 
 import AVFoundation
+import Accelerate
+import Foundation
 
 class AudioManager: ObservableObject {
     public static let shared = AudioManager()
 
     private enum Constant {
-        static let scheduleDelay = 0.5
-        static let pluckOffset = 1.0
+        static let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 48000, channels: 1, interleaved: false)!
         static let ticksToSeconds = {
             var info = mach_timebase_info()
             let err = mach_timebase_info(&info)
@@ -34,18 +35,17 @@ class AudioManager: ObservableObject {
     @Published private(set) var isPlaying: Bool = false
 
     private var audioEngine = AVAudioEngine()
-    private var playerNode = AVAudioPlayerNode()
+    private var sourceNode: AVAudioSourceNode! = nil
     private var sinkNode: AVAudioSinkNode! = nil
-    private var playbackAudioFile: AVAudioFile! = nil
     private var currentStartTime: TimeInterval = 0.0
+    private var playAtSampleTime: AVAudioFramePosition = 0
+    private var detectedSoundStart: Int = 0
+    private var detectedFrequencySwitch: Int = 0
 
     public func setup(completion: @escaping () -> Void) {
-        playbackAudioFile = try! AVAudioFile(forReading: Bundle.main.url(forResource: "backing", withExtension: "wav")!)
-
         // Create the recording session
         let session = AVAudioSession.sharedInstance()
-        try! session.setCategory(.playAndRecord, mode: .default, options: [.allowBluetoothA2DP, .defaultToSpeaker])
-        print("Requesting permission")
+        try! session.setCategory(.playAndRecord, mode: .measurement, options: [.allowBluetoothA2DP, .defaultToSpeaker])
         session.requestRecordPermission { allowed in
             guard allowed else {
                 fatalError("Not allowed to record")
@@ -55,40 +55,75 @@ class AudioManager: ObservableObject {
                 completion()
             }
         }
-
         try! session.setActive(true, options: [])
-        print("Audio session active")
 
-        let outputFormat = audioEngine.mainMixerNode.outputFormat(forBus: 0)
-        print("Mixer output format: \(outputFormat)")
-
-        audioEngine.attach(playerNode)
-        audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: outputFormat)
+        // Create and connect the source node
+        sourceNode = AVAudioSourceNode { _, timestamp, frameCount, audioBufferList -> OSStatus in
+            let ablPointer = UnsafeMutableAudioBufferListPointer(audioBufferList)
+            let isPlaying = self.isPlaying
+            let playAtSampleTime = self.playAtSampleTime
+            let basePlaybackSampleTime = Int(timestamp.pointee.mSampleTime) - Int(playAtSampleTime)
+            for frame in 0..<Int(frameCount) {
+                let playbackSampleTime = basePlaybackSampleTime + frame
+                let value: Float
+                if isPlaying && playbackSampleTime >= 0 && playbackSampleTime < 480 {
+                    // 2kHz wave
+                    value = sin(2 * Float.pi * Float(playbackSampleTime) * (2000 / 48000)) * 1.0
+                } else if isPlaying && playbackSampleTime >= 480 && playbackSampleTime < 960 {
+                    // 8kHz wave
+                    value = sin(2 * Float.pi * Float(playbackSampleTime) * (8000 / 48000)) * 1.0
+                } else {
+                    value = 0.0
+                }
+                for buffer in ablPointer {
+                    let buf: UnsafeMutableBufferPointer<Float> = UnsafeMutableBufferPointer(buffer)
+                    buf[frame] = value
+                }
+            }
+            return noErr
+        }
+        audioEngine.attach(sourceNode)
+        audioEngine.connect(sourceNode, to: audioEngine.mainMixerNode, format: Constant.format)
 
         // Create and connect the sink node
-        let input = audioEngine.inputNode
-        let inputFormat = input.outputFormat(forBus: 0)
-        print("Input format: \(inputFormat)")
-        var prevLoudFrameTimestamp = 0.0
-        sinkNode = AVAudioSinkNode() { timestamp, _, ptr in
-            // Get the index of the first loud frame in the input buffer, if any
-            let buffer = AVAudioPCMBuffer(pcmFormat: inputFormat, bufferListNoCopy: ptr)!
-            let firstLoudFrame = (0..<Int(buffer.frameLength))
-                .first(where: { abs(buffer.floatChannelData![0][$0]) > 0.2 })
-            guard let firstLoudFrame else { return noErr }
+        sinkNode = AVAudioSinkNode() { timestamp, frameCount, audioBufferList in
+            guard self.isPlaying else { return noErr }
+            let buffer = UnsafeBufferPointer<Float>(audioBufferList.pointee.mBuffers)
+            let sampleTime = Int(timestamp.pointee.mSampleTime)
 
-            // Calculate the host time of the first loud frame based on the specified timestamp
-            let loudFrameTimestamp = Double(timestamp.pointee.mHostTime) * Constant.ticksToSeconds + Double(firstLoudFrame) / inputFormat.sampleRate - self.systemInputLatency
+//            // Write the raw data out to the console for debugging
+//            for frame in 0..<Int(frameCount) {
+//                print("\(sampleTime + frame), \(buffer[frame])")
+//            }
 
-            // Check that it's been at least half a second since our last loud frame
-            guard loudFrameTimestamp - prevLoudFrameTimestamp > 0.5 else { return noErr }
-            prevLoudFrameTimestamp = loudFrameTimestamp
+            if self.detectedSoundStart == 0 {
+                // Look for the start of the impulse
+                for frame in 0..<Int(frameCount) where abs(buffer[frame]) > 0.2 {
+                    self.detectedSoundStart = sampleTime + frame
+                    break
+                }
+            }
 
-            print("Received loud frame at \(loudFrameTimestamp) (error=\(loudFrameTimestamp - self.currentStartTime - Constant.pluckOffset))")
+            if self.detectedSoundStart != 0 && self.detectedFrequencySwitch == 0 {
+                // Look for the frequency switch after the impulse by taking 24-sample windows and counting zero-crossings as a very basic way
+                // to measure the frequency content
+                var offset = self.detectedSoundStart > sampleTime ? self.detectedSoundStart - sampleTime : 0
+                while offset + 24 < Int(frameCount) {
+                    var lastIndex = UInt(0)
+                    var numCrossings = UInt(0)
+                    vDSP_nzcros(buffer.baseAddress!.advanced(by: offset), 1, vDSP_Length(frameCount), &lastIndex, &numCrossings, vDSP_Length(24))
+                    if numCrossings > 4 {
+                        self.detectedFrequencySwitch = sampleTime + offset
+                        break
+                    }
+                    offset += 24
+                }
+            }
+
             return noErr
         }
         audioEngine.attach(sinkNode)
-        audioEngine.connect(input, to: sinkNode, format: inputFormat)
+        audioEngine.connect(audioEngine.inputNode, to: sinkNode, format: Constant.format)
     }
 
     public func start() {
@@ -96,24 +131,32 @@ class AudioManager: ObservableObject {
             fatalError("Already playing")
         }
 
-        let frameCount = playbackAudioFile.length
         try! audioEngine.start()
 
-        // Delay the playback of the initial buffer so that we're not trying to play immediately when the engine starts
-        currentStartTime = Double(mach_absolute_time()) * Constant.ticksToSeconds + Constant.scheduleDelay
+        // Delay the playback so that we're not trying to play immediately when the engine starts
+        playAtSampleTime = sourceNode.lastRenderTime!.sampleTime + AVAudioFramePosition(Constant.format.sampleRate / 2)
 
-        playerNode.scheduleSegment(playbackAudioFile, startingFrame: 0, frameCount: AVAudioFrameCount(frameCount), at: nil) {
-            DispatchQueue.main.async {
-                self.playerNode.stop()
-                self.isPlaying = false
-            }
-        }
-        playerNode.play(at: AVAudioTime(hostTime: UInt64((currentStartTime - systemOutputLatency) / Constant.ticksToSeconds)))
-
-        print("Started at: \(currentStartTime)")
+        print("Will start at: \(playAtSampleTime)")
         print("IO buffer: \(systemIoBufferDuration)")
         print("Input latency: \(systemInputLatency)")
         print("Output latency: \(systemOutputLatency)")
         isPlaying = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.finishedPlaying()
+        }
+    }
+
+    private func finishedPlaying() {
+        let totalLatencySamples = Int64((systemInputLatency + systemOutputLatency) * Constant.format.sampleRate)
+        print("Total latency samples: \(totalLatencySamples)")
+        let startError = AVAudioFramePosition(detectedSoundStart) - playAtSampleTime - totalLatencySamples
+        print("Detected sound start at sample time \(detectedSoundStart) (errorSamples: \(startError), errorSeconds: \(Double(startError) / 48000))")
+        let frequencySwitchError = AVAudioFramePosition(detectedFrequencySwitch) - (playAtSampleTime + 480) - totalLatencySamples
+        print("Detected frequency switch at sample time \(detectedFrequencySwitch) (errorSamples: \(frequencySwitchError), errorSeconds: \(Double(frequencySwitchError) / 48000))")
+
+        isPlaying = false
+        detectedSoundStart = 0
+        detectedFrequencySwitch = 0
     }
 }
